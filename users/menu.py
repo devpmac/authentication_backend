@@ -1,13 +1,18 @@
-import functools
 import re
-import sqlite3
-from typing import Any, Callable
 from getpass import getpass
 
-from users import check_password, DB_PATH, encrypt_password, Users, Logs
+from users import check_password, encrypt_password, Users, Logs
 
 
-class Menu:
+class InvalidAction(Exception):
+    pass
+
+
+class MaxTries(Exception):
+    pass
+
+
+class Interface:
     EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
     NUM_TRIES = 3
 
@@ -15,20 +20,25 @@ class Menu:
         self.users = users
         self.logs = logs
 
+        self.email = ""  # logged out by default
+        self.set_actions()
+        self.set_options()
+
     def register(self) -> None:
+        if self.is_loggedin():
+            raise InvalidAction("A logged in user can not register.")
+
         for _ in range(self.NUM_TRIES):
             try:
-                email = self.get_email()
+                email = self._get_email()
 
                 # DB validation
-                query = self.users.read_user(db_path=DB_PATH, email=email)
+                query = self.users.read_user(email=email)
                 assert not query, "Email already in use.\n"
 
-                hashedPassword = self.new_password()
+                hashedPassword = self._new_password()
 
-                self.users.create_user(
-                    db_path=DB_PATH, email=email, password=hashedPassword
-                )
+                self.users.create_user(email=email, password=hashedPassword)
 
                 break
 
@@ -36,54 +46,101 @@ class Menu:
                 print(msg)
 
         else:
-            raise Exception("Max attempts exceeded, please try again later.\n")
+            raise MaxTries("Max attempts exceeded, please try again later.\n")
 
         # TODO: WRITE EMAIL
         # TODO: GENERATE LINK
-        print("Your account has been created.\n")
+        print("\nYour account has been created.\n")
 
     def login(self) -> None:
+        if self.is_loggedin():
+            raise InvalidAction("Already logged in.")
+
         for _ in range(self.NUM_TRIES):
             try:
-                email = self.get_email()
+                email = self._get_email()
 
                 # DB email validation
-                query = self.users.read_user(db_path=DB_PATH, email=email)
-                assert query, "Email Address not found.\n"
+                query = self.users.read_user(email=email)
+                assert query, "Email address not found.\n"
 
-                # TODO: assert last 10 minutes counts success = 0 < 5, "5 unsuccessful attempts in the last 10 minutes, try again later."
+                # Check if account is blocked
+                assert not self.users.is_locked(
+                    email
+                ), "\nThe account is blocked for now.\n"
 
-                success = self.authenticate(query["password"])
+                # Check if password matches
+                success = self._authenticate(query["password"])
+                # Register in logs database
                 self.logs.create_log(success, query["id"])
 
                 if success:
                     break
                 else:
                     print("Wrong password.\n")
+                    if self.logs.failed_attempts(query["id"]) > 4:
+                        "\nThe account will be blocked for 30 minutes.\n"
+                        self.users.lock_user(email=email)
 
             except AssertionError as msg:
                 print(msg)
 
         else:
-            # TODO: LOCK ACCOUNT
-            raise Exception("Max attempts exceeded, please try again later.\n")
+            raise MaxTries("Max attempts exceeded. Try again later.\n")
 
-        print("You are logged in.\n")
+        self.loggedin(email)
 
-    def get_email(self) -> str:
+    def logout(self) -> None:
+        if not self.is_loggedin():
+            raise InvalidAction("You must be logged in to log out.")
+        self.loggedout()
+
+    def _new_password(self) -> str:
+        password = getpass("Please enter the new password: ")
+        password_re = getpass("Please retype the new password: ")
+        self.validate_password(password, password_re)
+        return encrypt_password(password)
+
+    def _get_email(self) -> str:
         email = input("Please enter a valid email address: ")
         self.validate_email(email)
         return email
 
-    def authenticate(self, password: str) -> bool:
+    def _authenticate(self, password: str) -> bool:
         input = getpass("Please enter your password: ")
         return check_password(input, password)
 
-    def new_password(self) -> str:
-        password = getpass("Please enter your password: ")
-        password_re = getpass("Please retype your password: ")
-        self.validate_password(password, password_re)
-        return encrypt_password(password)
+    def is_loggedin(self) -> bool:
+        return bool(self.email)
+
+    def loggedin(self, email: str) -> None:
+        self.email = email
+        self.set_actions()
+        self.set_options()
+        print("You are logged in.\n")
+
+    def loggedout(self) -> None:
+        self.email = ""
+        self.set_actions()
+        self.set_options()
+        print("You have been logged out.\n")
+
+    def set_options(self) -> None:
+        if self.is_loggedin():
+            self.options = {"1": "Change password", "2": "Check log", "3": "Log out"}
+        else:
+            self.options = {"1": "Register", "2": "Login"}
+
+    def set_actions(self) -> None:
+        if self.is_loggedin():
+            self.actions = {
+                "Change password": "FIXME",
+                "Check log": "FIXME",
+                "Log out": self.logout,
+            }
+        else:
+            self.actions = {"Register": self.register, "Login": self.login}
+        return self.actions
 
     @classmethod
     def validate_email(cls, email: str) -> None:
