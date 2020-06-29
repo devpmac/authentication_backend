@@ -1,16 +1,16 @@
-# Ableton coding challenge
+# Authentication Backend
 
-Code for a simple backend to store user logins.
+Code for a simple backend app to store user logins.
 
 ### Virtual Environment Installation
 
 `
-git clone https://github.com/devpmac/challenge_ableton.git && cd challenge_ableton
+git clone https://github.com/devpmac/authentication_backend.git && cd authentication_backend
 `
 
 | Linux | Windows |
 | --- | --- |
-| `python -m venv env` | `python -m venv env` |
+| `python3 -m venv env` | `python -m venv env` |
 | `source env/bin/activate` | `env\Scripts\activate.bat` |
 
 `pip install -r requirements.txt`
