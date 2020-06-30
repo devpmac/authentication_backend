@@ -1,6 +1,6 @@
 # Authentication Backend
 
-Code for a simple command line Python3 app for User Authentication/Registration, including a simple access log. Check below for [setup instructions](#place-2).
+Code for a simple command line Python3 app for User Authentication/Registration, including a simple access log. Check below for [setup instructions](#setup).
 
 - **Run app**: `python app.py`
 
