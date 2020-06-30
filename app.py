@@ -9,6 +9,9 @@ if __name__ == "__main__":
     menu = Interface(users=users, logs=logs)
 
     while True:
+        greeting = f", {menu.email}" if menu._is_loggedin() else ""
+
+        print(f"What would you like to do{greeting}?")
         print("0 - Exit system")
         for i, opt in menu.options.items():
             print(f"{i} - {opt}")

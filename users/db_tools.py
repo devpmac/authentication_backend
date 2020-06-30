@@ -1,10 +1,18 @@
+import os
 import sqlite3
 from typing import List, Union
+
+
+def ensure_path(full_path: str) -> None:
+    dirname = os.path.dirname(full_path)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 class Users:
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
+        ensure_path(db_path)
 
         with sqlite3.connect(db_path) as db:
             cursor = db.cursor()
@@ -18,6 +26,10 @@ class Users:
                 registered_on DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 locked_until DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL);"""
         )
+
+        # TODO: extra fields for:
+        # activated_account, bool
+        # activated_on, datetime
 
     def create_user(self, email: str, password: str) -> None:
         with sqlite3.connect(self.db_path) as db:
@@ -33,6 +45,27 @@ class Users:
         find_user = "SELECT * FROM users WHERE email = ? LIMIT 1"
         cursor.execute(find_user, (email,))
         return cursor.fetchone()
+
+    def update_email(self, id: int, email: str) -> None:
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.cursor()
+        updateEmail = """UPDATE users SET email = ? WHERE id = ?"""
+        cursor.execute(updateEmail, (email, id))
+        db.commit()
+
+    def update_password(self, id: int, password: str) -> None:
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.cursor()
+        updatePassword = """UPDATE users SET password = ? WHERE id = ?"""
+        cursor.execute(updatePassword, (password, id))
+        db.commit()
+
+    def delete_user(self, id: int) -> None:
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.cursor()
+        deleteUser = """DELETE FROM users WHERE id = ?"""
+        cursor.execute(deleteUser, (id,))
+        db.commit()
 
     def lock_user(self, email: str) -> None:
         with sqlite3.connect(self.db_path) as db:
@@ -59,6 +92,7 @@ class Users:
 class Logs:
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
+        ensure_path(db_path)
 
         with sqlite3.connect(db_path) as db:
             cursor = db.cursor()
@@ -79,6 +113,20 @@ class Logs:
             cursor = db.cursor()
         insertData = """INSERT INTO logs(success, user_id) VALUES(?, ?)"""
         cursor.execute(insertData, (int(success), user_id))
+        db.commit()
+
+    def read_log(self, user_id: int) -> int:
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.cursor()
+        readData = """SELECT timestamp, success FROM logs WHERE user_id = (?)"""
+        cursor.execute(readData, (user_id,))
+        return cursor.fetchall()
+
+    def delete_userlog(self, user_id: int) -> None:
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.cursor()
+        deleteUserlog = """DELETE FROM logs WHERE user_id = ?"""
+        cursor.execute(deleteUserlog, (user_id,))
         db.commit()
 
     def failed_attempts(self, user_id: int) -> int:

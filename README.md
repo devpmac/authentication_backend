@@ -1,16 +1,38 @@
 # Authentication Backend
 
-Code for a simple backend app to store user logins.
+Code for a simple command line Python3 app for User Authentication/Registration, including a simple access log. Check below for [setup instructions](#place-2).
 
-### Virtual Environment Installation
+- Run app: `python app.py`
 
-`
-git clone https://github.com/devpmac/authentication_backend.git && cd authentication_backend
-`
+For demonstration purposes, the content of the databases can be read via:
 
-| Linux | Windows |
-| --- | --- |
-| `python3 -m venv env` | `python -m venv env` |
-| `source env/bin/activate` | `env\Scripts\activate.bat` |
+- `python read_db.py`
 
-`pip install -r requirements.txt`
+#### Notes:
+- Inserted email addresses are validated via `regex`.
+- The available methods depend on the user's authentication state.
+
+---
+## Code Overview
+The module `users` is separate into:
+- `db_tools.py` - built on `sqlite3` to mediate interactions with the database. Two Classes/Models were created: *Users* and *Logs*, to handle the corresponding tables.
+- `encryption.py` - password encryption and verification, using the standard library ([crypt](https://docs.python.org/3/library/crypt.html)) to provide password encryption and verification.
+**Note**: this library is only available in Unix.
+- `menu.py` - app interface, fully connected to the database. The main features include:
+    - User registration/deletion
+    - User log in/out
+    - email/password alterations
+    - User log printing
+    - Account locking for 30mins, after 5 failed authentications in 10mins.
+
+---
+## Setup
+
+Only standard libraries were used, so a recent Python3 should suffice to run everything.
+
+| Linux |
+| --- |
+| `git clone https://github.com/devpmac/authentication_backend.git` |
+| `cd authentication_backend` |
+| `python3 -m venv env` |
+| `source env/bin/activate` |
