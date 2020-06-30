@@ -2,9 +2,9 @@
 
 Code for a simple command line Python3 app for User Authentication/Registration, including a simple access log. Check below for [setup instructions](#place-2).
 
-- Run app: `python app.py`
+- **Run app**: `python app.py`
 
-For demonstration purposes, the content of the databases can be read via:
+For demonstration purposes, the **content** of the **database** can be **read** via:
 
 - `python read_db.py`
 
